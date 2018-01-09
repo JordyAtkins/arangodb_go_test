@@ -6,6 +6,7 @@ import (
 	"github.com/arangodb/go-driver"
 	"log"
 	"time"
+	"context"
 )
 
 const ConnectionString = "http://localhost:8529"
@@ -45,18 +46,58 @@ type Printable interface {
 }
 
 func main() {
-	fmt.Println("Hello")
 	conn := getConnection()
 	c := getClient(conn)
 	db := getDatabase(c, "")
 
+	// Testing single entity retrial
 	printAirportUsingKey(db, "M75")
 	printFlightUsingKey(db, "350814")
+
+	// Simple Airport queries
+	getFirstNAirports(db, 0)
+	getFirstNAirports(db, 10)
+	getFirstNAirports(db, 100)
+}
+
+// Gets the first N airports from the "airports" collection
+// If n is less than or equal to 0 then it is defaulted to 20
+func getFirstNAirports(db driver.Database, n int) {
+	if n <= 0 {
+		n = 20
+	}
+	aql := `
+FOR a IN airports
+LIMIT @n
+RETURN a`
+
+	res, err := db.Query(context.Background(), aql, map[string]interface{}{"n": n})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	t := time.Now()
+	defer res.Close()
+
+	for res.HasMore() {
+		var airports Airport
+		meta, err := res.ReadDocument(context.Background(), &airports)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		printContents(MetaInfo(meta), airports)
+		fmt.Println("------------")
+	}
+	fmt.Println(time.Now().Sub(t))
+
 }
 
 // Prints the contents of an airport found in the arangoDB collection "flights" with the matching key
 func printFlightUsingKey(db driver.Database, key string) {
-	flights, err := db.Collection(nil, "flights")
+	flights, err := db.Collection(context.Background(), "flights")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +112,7 @@ func printFlightUsingKey(db driver.Database, key string) {
 
 // Prints the contents of an airport found in the arangoDB collection "airports" with the matching key
 func printAirportUsingKey(db driver.Database, key string) {
-	airports, err := db.Collection(nil, "airports")
+	airports, err := db.Collection(context.Background(), "airports")
 	if err != nil {
 		log.Fatal(err)
 	}
