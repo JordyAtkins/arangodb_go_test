@@ -46,6 +46,7 @@ type Printable interface {
 }
 
 func main() {
+	t := time.Now()
 	conn := getConnection()
 	c := getClient(conn)
 	db := getDatabase(c, "")
@@ -58,6 +59,13 @@ func main() {
 	getFirstNAirports(db, 0)
 	getFirstNAirports(db, 10)
 	getFirstNAirports(db, 100)
+
+	// Simple Flight queries
+	getFirstNFlights(db, 0)
+	getFirstNFlights(db, 10)
+	getFirstNFlights(db, 100)
+
+	fmt.Println("Total time taken :", time.Now().Sub(t))
 }
 
 // Gets the first N airports from the "airports" collection
@@ -89,6 +97,41 @@ RETURN a`
 		}
 
 		printContents(MetaInfo(meta), airports)
+		fmt.Println("------------")
+	}
+	fmt.Println(time.Now().Sub(t))
+
+}
+
+// Gets the first N flights from the "flights" collection
+// If n is less than or equal to 0 then it is defaulted to 20
+func getFirstNFlights(db driver.Database, n int) {
+	if n <= 0 {
+		n = 20
+	}
+	aql := `
+FOR f IN flights
+LIMIT @n
+RETURN f`
+
+	res, err := db.Query(context.Background(), aql, map[string]interface{}{"n": n})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	t := time.Now()
+	defer res.Close()
+
+	for res.HasMore() {
+		var flight Flight
+		meta, err := res.ReadDocument(context.Background(), &flight)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		printContents(MetaInfo(meta), flight)
 		fmt.Println("------------")
 	}
 	fmt.Println(time.Now().Sub(t))
