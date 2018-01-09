@@ -1,12 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/http"
 	"log"
 	"time"
-	"context"
 )
 
 const ConnectionString = "http://localhost:8529"
@@ -146,7 +146,7 @@ func printFlightUsingKey(db driver.Database, key string) {
 	}
 	var matchingFlight Flight
 	meta, err := flights.ReadDocument(nil, key, &matchingFlight)
-	 if err!= nil{
+	if err != nil {
 
 	}
 
@@ -225,7 +225,6 @@ func (meta MetaInfo) Print() {
 	fmt.Println(meta.Rev)
 	fmt.Println(meta.Key)
 }
-
 
 // Gets the arangoDB client
 func getClient(conn driver.Connection) driver.Client {
