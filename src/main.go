@@ -33,6 +33,11 @@ type Flight struct {
 	TailNum       string    `json:"TailNum"`
 	Distance      int       `json:"Distance"`
 }
+type MetaInfo driver.DocumentMeta
+
+type Printable interface {
+	Print()
+}
 
 func main() {
 	fmt.Println("Hello")
@@ -40,22 +45,38 @@ func main() {
 	c := getClient(conn)
 	db := getDatabase(c, "")
 
-	printAirportUsingKey(db)
+	printAirportUsingKey(db, "M75")
+	printFlightUsingKey(db, "350814")
+}
+
+// Prints the contents of an airport found in the arangoDB collection "flights" with the matching key
+func printFlightUsingKey(db driver.Database, key string) {
+	flights, err := db.Collection(nil, "flights")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var matchingFlight Flight
+	meta, err := flights.ReadDocument(nil, key, &matchingFlight)
+	 if err!= nil{
+
+	}
+
+	print(MetaInfo(meta), matchingFlight)
 }
 
 // Prints the contents of an airport found in the arangoDB collection "airports" with the matching key
-func printAirportUsingKey(db driver.Database) {
+func printAirportUsingKey(db driver.Database, key string) {
 	airports, err := db.Collection(nil, "airports")
 	if err != nil {
 		log.Fatal(err)
 	}
 	var firstAirport Airport
-	meta, err := airports.ReadDocument(nil, "M75", &firstAirport)
+	meta, err := airports.ReadDocument(nil, key, &firstAirport)
 	if err != nil {
 		log.Fatal(err)
 	}
-	printMeta(meta)
-	firstAirport.Print()
+
+	print(MetaInfo(meta), firstAirport)
 }
 
 // Gets the database by name. If the name is not provided then _system is used
@@ -110,11 +131,12 @@ func (f Flight) Print() {
 
 // Prints out the metadata information using fmt.Println
 // Here as a helper method to remove duplication
-func printMeta(meta driver.DocumentMeta) {
+func (meta MetaInfo) Print() {
 	fmt.Println(meta.ID)
 	fmt.Println(meta.Rev)
 	fmt.Println(meta.Key)
 }
+
 
 // Gets the arangoDB client
 func getClient(conn driver.Connection) driver.Client {
@@ -130,5 +152,11 @@ func getConfiguration(conn driver.Connection) driver.ClientConfig {
 	return driver.ClientConfig{
 		Connection:     conn,
 		Authentication: driver.BasicAuthentication("root", ""), // Update this at some point
+	}
+}
+
+func print(printable ...Printable) {
+	for _, p := range printable {
+		p.Print()
 	}
 }
