@@ -10,6 +10,7 @@ import (
 
 const ConnectionString = "http://localhost:8529"
 
+// Flight structure matching that in arangoDB
 type Airport struct {
 	Airport string  `json:"airport"`
 	City    string  `json:"city"`
@@ -19,6 +20,7 @@ type Airport struct {
 	Long    float64 `json:"long"`
 }
 
+// Flight structure matching that in arangoDB
 type Flight struct {
 	Year          int       `json:"Year"`
 	Month         int       `json:"Month"`
@@ -33,8 +35,11 @@ type Flight struct {
 	TailNum       string    `json:"TailNum"`
 	Distance      int       `json:"Distance"`
 }
+
+// Wrapper around DocumentMeta to allow for the Printable interface to be used
 type MetaInfo driver.DocumentMeta
 
+// Interface to easily print out contents
 type Printable interface {
 	Print()
 }
@@ -61,7 +66,7 @@ func printFlightUsingKey(db driver.Database, key string) {
 
 	}
 
-	print(MetaInfo(meta), matchingFlight)
+	printContents(MetaInfo(meta), matchingFlight)
 }
 
 // Prints the contents of an airport found in the arangoDB collection "airports" with the matching key
@@ -76,7 +81,7 @@ func printAirportUsingKey(db driver.Database, key string) {
 		log.Fatal(err)
 	}
 
-	print(MetaInfo(meta), firstAirport)
+	printContents(MetaInfo(meta), firstAirport)
 }
 
 // Gets the database by name. If the name is not provided then _system is used
@@ -155,7 +160,7 @@ func getConfiguration(conn driver.Connection) driver.ClientConfig {
 	}
 }
 
-func print(printable ...Printable) {
+func printContents(printable ...Printable) {
 	for _, p := range printable {
 		p.Print()
 	}
