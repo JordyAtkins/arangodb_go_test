@@ -57,14 +57,14 @@ func main() {
 	printFlightUsingKey(db, "350814")
 
 	// Simple Airport queries
-	getFirstNAirports(db, 0)
-	getFirstNAirports(db, 10)
-	getFirstNAirports(db, 100)
+	printAirports(db, 0)
+	printAirports(db, 10)
+	printAirports(db, 100)
 
 	// Simple Flight queries
-	getFirstNFlights(db, 0)
-	getFirstNFlights(db, 10)
-	getFirstNFlights(db, 100)
+	printFlights(db, 0)
+	printFlights(db, 10)
+	printFlights(db, 100)
 
 	res := getAirportCountPerState(db)
 
@@ -72,11 +72,13 @@ func main() {
 		fmt.Println(k)
 		fmt.Println(v)
 	}
+
+	printFlightsFromAirportCode(db, 20, "LAX")
 }
 
-// Gets the first N airports from the "airports" collection
+// Prints the first N airports from the "airports" collection
 // If n is less than or equal to 0 then it is defaulted to 20
-func getFirstNAirports(db driver.Database, n int) {
+func printAirports(db driver.Database, n int) {
 	if n <= 0 {
 		n = 20
 	}
@@ -107,9 +109,9 @@ RETURN a`
 
 }
 
-// Gets the first N flights from the "flights" collection
+// Prints the first N flights from the "flights" collection
 // If n is less than or equal to 0 then it is defaulted to 20
-func getFirstNFlights(db driver.Database, n int) {
+func printFlights(db driver.Database, n int) {
 	if n <= 0 {
 		n = 20
 	}
@@ -139,7 +141,7 @@ RETURN f`
 	}
 }
 
-// Gets the different states and the number of airports within that state
+// Prints the different states and the number of airports within that state
 func getAirportCountPerState(db driver.Database) map[string]float64 {
 	query := `
 FOR a IN airports
@@ -172,6 +174,34 @@ RETURN {state, counter}
 	}
 
 	return retVal
+}
+// Print the flights from the supplied departure airport code
+func printFlightsFromAirportCode(db driver.Database, n int, code string) {
+	airportCode := fmt.Sprintf("airports/%s", code)
+	query := `
+FOR a, f IN OUTBOUND @airportCode flights
+LIMIT @count
+RETURN {a,f}
+`
+	res, err := db.Query(context.Background(), query, map[string]interface{}{"airportCode": airportCode, "count": n})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer timeTaken(time.Now(), "getNFlightsFromAirport")
+	defer res.Close()
+
+	for res.HasMore() {
+		var queryResult struct {
+			Airport `json:"a"`
+			Flight  `json:"f"`
+		}
+		_, err := res.ReadDocument(context.Background(), &queryResult)
+		if err != nil {
+			log.Fatal(err)
+		}
+		printContents(queryResult.Airport, queryResult.Flight)
+	}
 }
 
 // Prints the contents of an airport found in the arangoDB collection "flights" with the matching key
