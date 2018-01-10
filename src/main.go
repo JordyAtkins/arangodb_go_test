@@ -46,7 +46,8 @@ type Printable interface {
 }
 
 func main() {
-	t := time.Now()
+	defer timeTaken(time.Now(), "Total Elapsed Time")
+
 	conn := getConnection()
 	c := getClient(conn)
 	db := getDatabase(c, "")
@@ -65,7 +66,6 @@ func main() {
 	getFirstNFlights(db, 10)
 	getFirstNFlights(db, 100)
 
-	fmt.Println("Total time taken :", time.Now().Sub(t))
 }
 
 // Gets the first N airports from the "airports" collection
@@ -85,7 +85,7 @@ RETURN a`
 		log.Fatal(err)
 	}
 
-	t := time.Now()
+	defer timeTaken(time.Now(), "getFirstNAirports")
 	defer res.Close()
 
 	for res.HasMore() {
@@ -97,9 +97,7 @@ RETURN a`
 		}
 
 		printContents(MetaInfo(meta), airports)
-		fmt.Println("------------")
 	}
-	fmt.Println(time.Now().Sub(t))
 
 }
 
@@ -120,7 +118,7 @@ RETURN f`
 		log.Fatal(err)
 	}
 
-	t := time.Now()
+	defer timeTaken(time.Now(), "getFirstNFlights")
 	defer res.Close()
 
 	for res.HasMore() {
@@ -132,10 +130,7 @@ RETURN f`
 		}
 
 		printContents(MetaInfo(meta), flight)
-		fmt.Println("------------")
 	}
-	fmt.Println(time.Now().Sub(t))
-
 }
 
 // Prints the contents of an airport found in the arangoDB collection "flights" with the matching key
@@ -193,37 +188,20 @@ func getConnection() driver.Connection {
 	return conn
 }
 
-// Prints out the instance content of a Flight
+// Prints out the instance content of a Airport
 func (a Airport) Print() {
-	fmt.Println(a.Airport)
-	fmt.Println(a.City)
-	fmt.Println(a.Country)
-	fmt.Println(a.Lat)
-	fmt.Println(a.Long)
-	fmt.Println(a.State)
+	fmt.Println(a.Airport, a.City, a.Country, a.Lat, a.Long, a.State)
 }
 
 // Prints out the instance content of a Flight
 func (f Flight) Print() {
-	fmt.Println(f.ArrTime)
-	fmt.Println(f.ArrTimeUTC)
-	fmt.Println(f.DayofMonth)
-	fmt.Println(f.DayOfWeek)
-	fmt.Println(f.DepTime)
-	fmt.Println(f.Distance)
-	fmt.Println(f.FlightNum)
-	fmt.Println(f.Month)
-	fmt.Println(f.TailNum)
-	fmt.Println(f.UniqueCarrier)
-	fmt.Println(f.Year)
+	fmt.Println(f.ArrTime, f.ArrTimeUTC, f.DayofMonth, f.DayOfWeek, f.DepTime, f.Distance, f.FlightNum, f.Month, f.TailNum, f.UniqueCarrier, f.Year)
 }
 
 // Prints out the metadata information using fmt.Println
 // Here as a helper method to remove duplication
 func (meta MetaInfo) Print() {
-	fmt.Println(meta.ID)
-	fmt.Println(meta.Rev)
-	fmt.Println(meta.Key)
+	fmt.Println(meta.ID, meta.Rev, meta.Key)
 }
 
 // Gets the arangoDB client
@@ -247,4 +225,8 @@ func printContents(printable ...Printable) {
 	for _, p := range printable {
 		p.Print()
 	}
+}
+
+func timeTaken(start time.Time, msg string) {
+	fmt.Println(msg, time.Since(start))
 }
