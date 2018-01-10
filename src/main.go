@@ -66,6 +66,12 @@ func main() {
 	getFirstNFlights(db, 10)
 	getFirstNFlights(db, 100)
 
+	res := getAirportCountPerState(db)
+
+	for k, v := range res {
+		fmt.Println(k)
+		fmt.Println(v)
+	}
 }
 
 // Gets the first N airports from the "airports" collection
@@ -74,12 +80,12 @@ func getFirstNAirports(db driver.Database, n int) {
 	if n <= 0 {
 		n = 20
 	}
-	aql := `
+	query := `
 FOR a IN airports
 LIMIT @n
 RETURN a`
 
-	res, err := db.Query(context.Background(), aql, map[string]interface{}{"n": n})
+	res, err := db.Query(context.Background(), query, map[string]interface{}{"n": n})
 
 	if err != nil {
 		log.Fatal(err)
@@ -107,12 +113,12 @@ func getFirstNFlights(db driver.Database, n int) {
 	if n <= 0 {
 		n = 20
 	}
-	aql := `
+	query := `
 FOR f IN flights
 LIMIT @n
 RETURN f`
 
-	res, err := db.Query(context.Background(), aql, map[string]interface{}{"n": n})
+	res, err := db.Query(context.Background(), query, map[string]interface{}{"n": n})
 
 	if err != nil {
 		log.Fatal(err)
@@ -131,6 +137,41 @@ RETURN f`
 
 		printContents(MetaInfo(meta), flight)
 	}
+}
+
+// Gets the different states and the number of airports within that state
+func getAirportCountPerState(db driver.Database) map[string]float64 {
+	query := `
+FOR a IN airports
+COLLECT state = a.state
+WITH COUNT INTO counter
+RETURN {state, counter}
+`
+	res, err := db.Query(context.Background(), query, nil)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer timeTaken(time.Now(), "getAirportCountPerState")
+	defer res.Close()
+
+	retVal := map[string]float64{}
+
+	for res.HasMore() {
+		var queryResult struct {
+			State   string  `json:"state"`
+			Counter float64 `json:"counter"`
+		}
+
+		_, err := res.ReadDocument(context.Background(), &queryResult)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		retVal[queryResult.State] = queryResult.Counter
+	}
+
+	return retVal
 }
 
 // Prints the contents of an airport found in the arangoDB collection "flights" with the matching key
