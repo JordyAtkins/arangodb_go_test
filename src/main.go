@@ -35,6 +35,8 @@ type Flight struct {
 	FlightNum     int       `json:"FlightNum"`
 	TailNum       string    `json:"TailNum"`
 	Distance      int       `json:"Distance"`
+	FromAirport   string    `json:"_from"`
+	ToAirport     string    `json:"_to"`
 }
 
 // Wrapper around DocumentMeta to allow for the Printable interface to be used
@@ -74,6 +76,8 @@ func main() {
 	}
 
 	printFlightsFromAirportCode(db, 20, "LAX")
+
+	createNewAirport(db)
 }
 
 // Prints the first N airports from the "airports" collection
@@ -175,6 +179,34 @@ RETURN {state, counter}
 
 	return retVal
 }
+
+func createNewAirport(db driver.Database) {
+	newAirport := Airport{
+		Airport: "A new one",
+		State:   "NA",
+		Lat:     39.5155436,
+		Long:    -84.29460752,
+		Country: "USA",
+		City:    "Cincinnati",
+	}
+
+	col, err := db.Collection(context.Background(), "airports")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	meta, err := col.CreateDocument(context.Background(), newAirport)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	printContents(MetaInfo(meta))
+
+	printAirportUsingKey(db, meta.Key)
+}
+
 // Print the flights from the supplied departure airport code
 func printFlightsFromAirportCode(db driver.Database, n int, code string) {
 	airportCode := fmt.Sprintf("airports/%s", code)
@@ -266,7 +298,7 @@ func (a Airport) Print() {
 
 // Prints out the instance content of a Flight
 func (f Flight) Print() {
-	fmt.Println(f.ArrTime, f.ArrTimeUTC, f.DayofMonth, f.DayOfWeek, f.DepTime, f.Distance, f.FlightNum, f.Month, f.TailNum, f.UniqueCarrier, f.Year)
+	fmt.Println(f.ArrTime, f.ArrTimeUTC, f.DayofMonth, f.DayOfWeek, f.DepTime, f.Distance, f.FlightNum, f.Month, f.TailNum, f.UniqueCarrier, f.Year, f.FromAirport, f.ToAirport)
 }
 
 // Prints out the metadata information using fmt.Println
