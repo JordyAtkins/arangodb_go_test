@@ -243,7 +243,7 @@ func printFlightUsingKey(db driver.Database, key string) {
 		log.Fatal(err)
 	}
 	var matchingFlight Flight
-	meta, err := flights.ReadDocument(nil, key, &matchingFlight)
+	meta, err := flights.ReadDocument(context.Background(), key, &matchingFlight)
 	if err != nil {
 
 	}
@@ -258,7 +258,7 @@ func printAirportUsingKey(db driver.Database, key string) {
 		log.Fatal(err)
 	}
 	var firstAirport Airport
-	meta, err := airports.ReadDocument(nil, key, &firstAirport)
+	meta, err := airports.ReadDocument(context.Background(), key, &firstAirport)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -273,7 +273,7 @@ func getDatabase(c driver.Client, name string) driver.Database {
 		name = "_system"
 	}
 
-	res, err := c.Database(nil, name)
+	res, err := c.Database(context.Background(), name)
 	if err != nil {
 		log.Fatal(err)
 	}
